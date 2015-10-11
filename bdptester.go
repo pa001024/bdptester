@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
+	"os"
 	"runtime"
+	"time"
 
 	"io/ioutil"
 	"net/http"
 	"net/url"
-
-	"github.com/pa001024/reflex/util"
 )
 
 type BaiduYunTester struct {
@@ -49,7 +50,7 @@ func (this *BaiduYunTester) Run(threadCount int) string {
 			i++
 			if i%3600 == 0 {
 				// fmt.Println("trying [" + toBase36(i) + "] ...")
-				util.INFO.Log("trying [" + toBase36(i) + "] ...")
+				INFO.Log("trying [" + toBase36(i) + "] ...")
 			}
 		}
 	}()
@@ -104,9 +105,7 @@ func (this *BaiduYunTester) runSingle(pwd string) bool {
 	if string(bin)[5:16] == `{"errno":0,` {
 		return true
 	}
-	if this.debug {
-		fmt.Println("try ["+pwd+"] fail", string(bin)[6:16])
-	}
+	DEBUG.Log("try ["+pwd+"] fail", string(bin)[6:16])
 	return false
 }
 
@@ -121,20 +120,69 @@ func main() {
 	at := flag.String("at", "0000", "start at")
 	isDebug := flag.Bool("d", false, "is debug?")
 	flag.Parse()
-	// fmt.Println("using", runtime.NumCPU(), "CPU cores")
-	util.INFO.Log("using ", runtime.NumCPU(), " CPU cores ", *j, " threads")
+	INFO.Log("using ", runtime.NumCPU(), " CPU cores ", *j, " threads")
 	if *u == "" {
 		flag.Usage()
 		return
 	}
-	// fmt.Println("start test url:", *u)
-	util.INFO.Log("start test url:", *u)
+	INFO.Log("start test url:", *u)
 
 	o := NewBaiduYunTester(*u, *at)
 	if *isDebug {
-		o.SetDebug(true)
+		DEBUG.SetEnable(true)
 	}
 	o.Run(*j)
-	// fmt.Println("result:", o.Result)
-	util.INFO.Log("result: ", o.Result)
+	INFO.Log("result: ", o.Result)
+}
+
+// copy from github.com/pa001024/reflex/util/Logger.go
+
+var (
+	DEBUG = NewLogger(os.Stderr, false, "[DEBUG] ")
+	INFO  = NewLogger(os.Stdout, true, "[INFO] ")
+)
+
+// 日志对象
+type Logger struct {
+	output io.Writer
+	enable bool
+	perfix string
+}
+
+// 创建新日志对象
+func NewLogger(w io.Writer, enable bool, perfix string) *Logger {
+	return &Logger{w, enable, perfix}
+}
+
+// 输出日志
+func (l *Logger) Log(s ...interface{}) {
+	if l.enable {
+		fmt.Fprintf(l.output, "%s%s %v\n", l.perfix, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprint(s...))
+	}
+}
+
+func (l *Logger) Logf(format string, s ...interface{}) {
+	if l.enable {
+		fmt.Fprintf(l.output, "%s%s %v\n", l.perfix, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf(format, s...))
+	}
+}
+
+// 返回启用状态
+func (l *Logger) Enable() bool {
+	return l.enable
+}
+
+// 设置启用状态
+func (l *Logger) SetEnable(v bool) {
+	l.enable = v
+}
+
+// 返回输出
+func (l *Logger) Output() io.Writer {
+	return l.output
+}
+
+// 设置输出
+func (l *Logger) SetOutput(v io.Writer) {
+	l.output = v
 }

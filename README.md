@@ -4,16 +4,16 @@
 下载地址
 --------
 
-百度盘: http://pan.baidu.com/s/1c0FeVgk
+百度盘: http://pan.baidu.com/s/1pJ8COB5
 
-备用: http://pan.baidu.com/s/1nty78sL 密码: vvsb
+备用: http://pan.baidu.com/s/1kTD4HGr 密码: nrd3
 
 使用方法
 --------
 
 下载软件输入[命令行](#windows下如何快速输入命令行)
 
-`bdptester -u "http://pan.baidu.com/share/init?shareid=3521213983&uk=3793282542"`
+`bdptester -u "http://pan.baidu.com/share/init?shareid=3625791718&uk=3793282542"`
 
 接下来就是耐心等待
 
@@ -30,13 +30,13 @@
 
 如果知道密码可以用`-at`参数来试试速度
 
-比如密码是`vvsb` 就输入命令行
+比如密码是`nrd3` 就输入命令行
 
-`bdptester -u "http://pan.baidu.com/share/init?shareid=3521213983&uk=3793282542" -at v000`
+`bdptester -u "http://pan.baidu.com/share/init?shareid=3625791718&uk=3793282542" -at nr00`
 
-就是从`v000`开始测试 基本上几秒钟就出结果了
+就是从`nr00`开始测试 基本上几秒钟就出结果了
 
-+ 这个参数也适用于上次测了一半中途停了, 因为程序会输出现在测到哪里 所以下一次再测试就可以直接填at参数而不用从头开始了
++ P.S. 这个参数也适用于上次测了一半中途停了, 因为程序会输出现在测到哪里 所以下一次再测试就可以直接填at参数而不用从头开始了
 
 手动设定线程数
 --------------
@@ -76,3 +76,13 @@ Windows下如何快速输入命令行?
 只要在资源管理器中打开程序所在目录 在空白处按shift键+鼠标右键 就可以出现含有"在此处打开命令窗口的界面"
 
 然后你可以在里面打命令 也可以在外面写好 然后用右键粘贴进去就可以运行了
+
+
+Linux
+-----
+
+Linux用户直接下载go环境 然后
+
+`go get -v github.com/pa001024/bdptester`
+
+用法一样
