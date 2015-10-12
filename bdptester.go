@@ -37,7 +37,11 @@ func (this *BaiduYunTester) Run(threadCount int) string {
 		go this.runWorker(in, out)
 	}
 	go func() {
-		i := toInt(this.StartAt)
+		lastTime := time.Now().UnixNano()
+		s := toInt(this.StartAt)
+		i := s
+		len1 := 1679616 - toInt(this.StartAt)
+		len2 := float32(len1 / 100)
 		// 36^4=1679616
 		if i >= 1679616 {
 			return
@@ -48,9 +52,12 @@ func (this *BaiduYunTester) Run(threadCount int) string {
 			}
 			in <- toBase36(i)
 			i++
-			if i%3600 == 0 {
-				// fmt.Println("trying [" + toBase36(i) + "] ...")
-				INFO.Log("trying [" + toBase36(i) + "] ...")
+			if i%3888 == 0 {
+				dur := time.Now().UnixNano() - lastTime
+				speed := int(3888 * 1e9 / float32(dur))
+				rem := (len1 - i + s) / speed
+				lastTime = time.Now().UnixNano()
+				INFO.Log("testing ["+toBase36(i)+"] ", i-s, "/", len1, " ", fmt.Sprintf("%.1f", float32(i-s)/len2), "% speed: ", speed, " /s remaining : ", rem, " second")
 			}
 		}
 	}()
@@ -118,6 +125,7 @@ func main() {
 	j := flag.Int("j", 500, "threads of http get")
 	u := flag.String("u", "", "baidu pan url like http://pan.baidu.com/share/init?shareid=2820668751&uk=3793282542")
 	at := flag.String("at", "0000", "start at")
+	// to := flag.String("to", "zzzz", "to end")
 	isDebug := flag.Bool("d", false, "is debug?")
 	flag.Parse()
 	INFO.Log("using ", runtime.NumCPU(), " CPU cores ", *j, " threads")
