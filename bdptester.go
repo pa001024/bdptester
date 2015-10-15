@@ -16,15 +16,17 @@ import (
 type BaiduYunTester struct {
 	URL     string
 	StartAt string // TODO
+	EndWith string
 	testUrl string
 	Result  string
 	debug   bool
 }
 
-func NewBaiduYunTester(urlstr, startat string) (v *BaiduYunTester) {
+func NewBaiduYunTester(urlstr, startat, endwith string) (v *BaiduYunTester) {
 	v = &BaiduYunTester{
 		URL:     urlstr,
 		StartAt: startat,
+		EndWith: endwith,
 	}
 	v.testUrl = "http://pan.baidu.com/share/verify?" + urlstr[32:]
 	return
@@ -37,17 +39,23 @@ func (this *BaiduYunTester) Run(threadCount int) string {
 		go this.runWorker(in, out)
 	}
 	go func() {
+		inittime := time.Now().UnixNano()
 		lastTime := time.Now().UnixNano()
 		s := toInt(this.StartAt)
 		i := s
-		len1 := 1679616 - toInt(this.StartAt)
-		len2 := float32(len1 / 100)
-		// 36^4=1679616
-		if i >= 1679616 {
+		// ffff = 36^4=1679616
+		final := toInt(this.EndWith)
+		blockLength := final - toInt(this.StartAt)
+		if i > final {
+			out <- "-"
 			return
 		}
 		for {
 			if this.Result != "" {
+				INFO.Logf("work finished! password tested: %d time used: %d (s)",
+					i-s,
+					(time.Now().UnixNano()-inittime)/1e9,
+				)
 				break
 			}
 			in <- toBase36(i)
@@ -55,9 +63,16 @@ func (this *BaiduYunTester) Run(threadCount int) string {
 			if i%3888 == 0 {
 				dur := time.Now().UnixNano() - lastTime
 				speed := int(3888 * 1e9 / float32(dur))
-				rem := (len1 - i + s) / speed
 				lastTime = time.Now().UnixNano()
-				INFO.Log("testing ["+toBase36(i)+"] ", i-s, "/", len1, " ", fmt.Sprintf("%.1f", float32(i-s)/len2), "% speed: ", speed, " /s remaining : ", rem, " second")
+				INFO.Logf("testing [%s] %d/%d %.1f%% speed: %d/s passed: %d (s) remaining: %d (s)",
+					toBase36(i),
+					i-s,
+					blockLength,
+					float32(i-s)/float32(blockLength)*100,
+					speed,
+					(time.Now().UnixNano()-inittime)/1e9,
+					(blockLength-i+s)/speed,
+				)
 			}
 		}
 	}()
@@ -120,27 +135,57 @@ func (this *BaiduYunTester) SetDebug(b bool) {
 	this.debug = b
 }
 
+type DoubleWriter struct {
+	out1 io.Writer
+	out2 io.Writer
+}
+
+func (this *DoubleWriter) Write(p []byte) (n int, err error) {
+	this.out1.Write(p)
+	return this.out2.Write(p)
+}
+
 func main() {
+	// no use for go 1.5 later
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	j := flag.Int("j", 500, "threads of http get")
-	u := flag.String("u", "", "baidu pan url like http://pan.baidu.com/share/init?shareid=2820668751&uk=3793282542")
+
+	threadCount := flag.Int("j", 500, "threads of http get")
+	targetUrlRaw := flag.String("u", "", "baidu pan url like http://pan.baidu.com/share/init?shareid=4087218561&uk=1699323331")
 	at := flag.String("at", "0000", "start at")
-	// to := flag.String("to", "zzzz", "to end")
+	to := flag.String("to", "zzzz", "end with")
 	isDebug := flag.Bool("d", false, "is debug?")
+	out := flag.String("o", "auto", "the file you want to output [default \"auto\" to \"shareid-uk.log\"]")
 	flag.Parse()
-	INFO.Log("using ", runtime.NumCPU(), " CPU cores ", *j, " threads")
-	if *u == "" {
+	target, err := url.Parse(*targetUrlRaw)
+	if *targetUrlRaw == "" || err != nil {
 		flag.Usage()
 		return
 	}
-	INFO.Log("start test url:", *u)
+	if *out == "auto" {
+		*out = fmt.Sprintf("%s-%s.log", target.Query().Get("shareid"), target.Query().Get("uk"))
+	}
+	if *out != "" {
+		f, err := os.Create(*out)
+		if err == nil {
+			defer f.Close()
+			dw := &DoubleWriter{os.Stdout, f}
+			INFO.SetOutput(dw)
+		}
+	}
 
-	o := NewBaiduYunTester(*u, *at)
+	INFO.Log("using ", runtime.NumCPU(), " CPU cores ", *threadCount, " threads")
+	INFO.Log("start test url:", *targetUrlRaw)
+
+	o := NewBaiduYunTester(*targetUrlRaw, *at, *to)
 	if *isDebug {
 		DEBUG.SetEnable(true)
 	}
-	o.Run(*j)
-	INFO.Log("result: ", o.Result)
+	o.Run(*threadCount)
+	if o.Result == "" || o.Result == "-" {
+		INFO.Log("no result maybe you should try another -at -to")
+	} else {
+		INFO.Log("result: ", o.Result)
+	}
 }
 
 // copy from github.com/pa001024/reflex/util/Logger.go

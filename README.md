@@ -4,16 +4,16 @@
 下载地址
 --------
 
-百度盘: http://pan.baidu.com/s/1pJ8COB5
+百度盘: http://pan.baidu.com/s/1lxjf4
 
-备用: http://pan.baidu.com/s/1kTD4HGr 密码: nrd3
+备用: http://pan.baidu.com/s/1jGlMK7s 密码: tb5d
 
 使用方法
 --------
 
 下载软件输入[命令行](#windows下如何快速输入命令行)
 
-`bdptester -u "http://pan.baidu.com/share/init?shareid=3625791718&uk=3793282542"`
+`bdptester -u "http://pan.baidu.com/share/init?shareid=2125383604&uk=3793282542"`
 
 接下来就是耐心等待
 
